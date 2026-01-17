@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nearby Businesses Map</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <h1>Nearby Businesses</h1>
+        <p>
+          Discover businesses around you and explore them directly on the map.
+        </p>
+      </div>
+      <button id="locate" type="button">Use my location</button>
+    </header>
+
+    <main class="layout">
+      <section class="map-panel">
+        <div id="map" class="map"></div>
+        <div id="map-error" class="map-error" hidden></div>
+      </section>
+      <aside class="list-panel">
+        <h2>Nearest businesses</h2>
+        <ol id="results" class="results"></ol>
+      </aside>
+    </main>
+
+    <footer class="app-footer">
+      <p>
+        Add your Google Maps JavaScript API key in <code>index.html</code> to
+        load the map and Places results.
+      </p>
+    </footer>
+
+    <script src="app.js"></script>
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places&callback=initMap"
+      async
+      defer
+    ></script>
+  </body>
+</html>
