@@ -90,7 +90,7 @@ function fetchNearbyBusinesses(location) {
   const request = {
     location,
     radius: DEFAULT_RADIUS_METERS,
-    type: ["store"],
+    type: "store",
     openNow: false,
   };
 
