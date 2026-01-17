@@ -104,12 +104,12 @@ function fetchNearbyBusinesses(location) {
       .slice(0, 10)
       .sort((a, b) => (b.rating || 0) - (a.rating || 0));
 
-    renderResults(sortedResults);
-    renderMarkers(sortedResults);
+    const markersByPlaceId = renderMarkers(sortedResults);
+    renderResults(sortedResults, markersByPlaceId);
   });
 }
 
-function renderResults(results) {
+function renderResults(results, markersByPlaceId) {
   const list = document.getElementById("results");
   list.innerHTML = "";
 
@@ -124,6 +124,9 @@ function renderResults(results) {
   results.forEach((place, index) => {
     const item = document.createElement("li");
     item.className = "result-item";
+    const marker = place.place_id
+      ? markersByPlaceId.get(place.place_id)
+      : null;
 
     const header = document.createElement("div");
     header.className = "result-header";
@@ -146,15 +149,20 @@ function renderResults(results) {
 
     item.append(header, address);
     item.addEventListener("click", () => {
+      if (marker) {
+        map.panTo(marker.getPosition());
+        map.setZoom(MAP_ZOOM + 2);
+        infoWindow.setContent(
+          `<div class="info-window"><strong>${place.name}</strong><br/>${place.vicinity || ""}</div>`
+        );
+        infoWindow.open(map, marker);
+        return;
+      }
+
       if (place.geometry?.location) {
         map.panTo(place.geometry.location);
         map.setZoom(MAP_ZOOM + 2);
       }
-
-      infoWindow.setContent(
-        `<div class="info-window"><strong>${place.name}</strong><br/>${place.vicinity || ""}</div>`
-      );
-      infoWindow.open(map, markers[index + 1]);
     });
 
     list.appendChild(item);
@@ -162,6 +170,8 @@ function renderResults(results) {
 }
 
 function renderMarkers(results) {
+  const markersByPlaceId = new Map();
+
   results.forEach((place) => {
     if (!place.geometry?.location) {
       return;
@@ -180,8 +190,13 @@ function renderMarkers(results) {
       infoWindow.open(map, marker);
     });
 
+    if (place.place_id) {
+      markersByPlaceId.set(place.place_id, marker);
+    }
     markers.push(marker);
   });
+
+  return markersByPlaceId;
 }
 
 function clearMarkers() {
