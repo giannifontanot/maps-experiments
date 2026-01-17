@@ -27,13 +27,13 @@ function initMap() {
       .then((location) => {
         errorElement.hidden = true;
         updateMap(location, "Your location");
-        fetchNearbyBusinesses(location);
+        return fetchNearbyBusinesses(location);
       })
       .catch((error) => {
         errorElement.hidden = false;
         errorElement.textContent = error.message;
         updateMap(DEFAULT_LOCATION, "Default location");
-        fetchNearbyBusinesses(DEFAULT_LOCATION);
+        return fetchNearbyBusinesses(DEFAULT_LOCATION);
       })
       .finally(() => {
         locateButton.disabled = false;
@@ -87,25 +87,29 @@ function updateMap(location, label) {
 }
 
 function fetchNearbyBusinesses(location) {
-  const request = {
-    location,
-    radius: DEFAULT_RADIUS_METERS,
-    type: "store",
-    openNow: false,
-  };
+  return new Promise((resolve) => {
+    const request = {
+      location,
+      radius: DEFAULT_RADIUS_METERS,
+      type: "store",
+      openNow: false,
+    };
 
-  service.nearbySearch(request, (results, status) => {
-    if (status !== google.maps.places.PlacesServiceStatus.OK || !results) {
-      renderResults([]);
-      return;
-    }
+    service.nearbySearch(request, (results, status) => {
+      if (status !== google.maps.places.PlacesServiceStatus.OK || !results) {
+        renderResults([]);
+        resolve();
+        return;
+      }
 
-    const sortedResults = results
-      .slice(0, 10)
-      .sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      const sortedResults = results
+        .slice(0, 10)
+        .sort((a, b) => (b.rating || 0) - (a.rating || 0));
 
-    const markersByPlaceId = renderMarkers(sortedResults);
-    renderResults(sortedResults, markersByPlaceId);
+      const markersByPlaceId = renderMarkers(sortedResults);
+      renderResults(sortedResults, markersByPlaceId);
+      resolve();
+    });
   });
 }
 
