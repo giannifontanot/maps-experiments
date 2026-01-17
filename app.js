@@ -124,9 +124,15 @@ function renderResults(results, markersByPlaceId) {
   results.forEach((place, index) => {
     const item = document.createElement("li");
     item.className = "result-item";
-    const marker = place.place_id
-      ? markersByPlaceId.get(place.place_id)
-      : null;
+
+    // Get marker by place_id if available, otherwise by location coordinates
+    let marker = null;
+    if (place.place_id) {
+      marker = markersByPlaceId.get(place.place_id);
+    } else if (place.geometry?.location) {
+      const key = `${place.geometry.location.lat()},${place.geometry.location.lng()}`;
+      marker = markersByPlaceId.get(key);
+    }
 
     const header = document.createElement("div");
     header.className = "result-header";
@@ -190,8 +196,13 @@ function renderMarkers(results) {
       infoWindow.open(map, marker);
     });
 
+    // Store marker by place_id if available, otherwise by a generated key
     if (place.place_id) {
       markersByPlaceId.set(place.place_id, marker);
+    } else {
+      // Use location as fallback key for places without place_id
+      const key = `${place.geometry.location.lat()},${place.geometry.location.lng()}`;
+      markersByPlaceId.set(key, marker);
     }
     markers.push(marker);
   });
