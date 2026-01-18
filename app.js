@@ -120,10 +120,40 @@ function fetchNearbyBusinesses(location, radius = DEFAULT_RADIUS_METERS) {
 
     service.nearbySearch(request, (results, status) => {
       if (status !== google.maps.places.PlacesServiceStatus.OK || !results) {
+        let errorMessage = "No businesses found nearby";
+
+        switch (status) {
+          case google.maps.places.PlacesServiceStatus.INVALID_REQUEST:
+            if (radius >= 50000) {
+              errorMessage = "Search area too large. Please zoom in and try again.";
+            } else {
+              errorMessage = "Invalid search request. Please try again.";
+            }
+            break;
+          case google.maps.places.PlacesServiceStatus.OVER_QUERY_LIMIT:
+            errorMessage = "Search quota exceeded. Please try again later.";
+            break;
+          case google.maps.places.PlacesServiceStatus.REQUEST_DENIED:
+            errorMessage = "Search request denied. Please check your API key.";
+            break;
+          case google.maps.places.PlacesServiceStatus.ZERO_RESULTS:
+            errorMessage = "No businesses found in this area.";
+            break;
+        }
+
+        // Show error message in the map error element
+        const errorElement = document.getElementById("map-error");
+        errorElement.textContent = errorMessage;
+        errorElement.hidden = false;
+
         renderResults([]);
         resolve();
         return;
       }
+
+      // Hide error message on successful results
+      const errorElement = document.getElementById("map-error");
+      errorElement.hidden = true;
 
       const sortedResults = results
         .slice(0, 10)
@@ -250,10 +280,13 @@ function getSearchRadiusFromBounds() {
 
   const center = bounds.getCenter();
   const northEast = bounds.getNorthEast();
-  return google.maps.geometry.spherical.computeDistanceBetween(
+  const calculatedRadius = google.maps.geometry.spherical.computeDistanceBetween(
     center,
     northEast
   );
+
+  // Cap at Google Places API maximum radius of 50,000 meters
+  return Math.min(calculatedRadius, 50000);
 }
 
 window.initMap = initMap;
