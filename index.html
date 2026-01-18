@@ -20,6 +20,9 @@
     <main class="layout">
       <section class="map-panel">
         <div id="map" class="map"></div>
+        <div class="map-actions">
+          <button id="search-area" type="button">Search this area</button>
+        </div>
         <div id="map-error" class="map-error" hidden></div>
       </section>
       <aside class="list-panel">
@@ -37,8 +40,8 @@
 
     <script src="app.js"></script>
     <script
-      src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places&callback=initMap"
-      async
+    src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places,geometry&callback=initMap"
+    async
       defer
     ></script>
   </body>

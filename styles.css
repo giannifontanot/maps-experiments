@@ -83,12 +83,48 @@ body {
   position: absolute;
   top: 16px;
   left: 16px;
-  right: 16px;
+  right: calc(16px + 200px);
   padding: 12px 16px;
   border-radius: 12px;
   background: rgba(239, 68, 68, 0.9);
   color: #fff;
   font-size: 14px;
+  z-index: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-actions {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  z-index: 1;
+}
+
+.map-actions button {
+  border: none;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: #111827;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 12px 20px rgba(15, 23, 42, 0.2);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.map-actions button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+  box-shadow: none;
+}
+
+.map-actions button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 24px rgba(15, 23, 42, 0.24);
 }
 
 .list-panel {

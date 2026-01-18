@@ -11,6 +11,7 @@ function initMap() {
   const mapElement = document.getElementById("map");
   const errorElement = document.getElementById("map-error");
   const locateButton = document.getElementById("locate");
+  const searchAreaButton = document.getElementById("search-area");
 
   map = new google.maps.Map(mapElement, {
     center: DEFAULT_LOCATION,
@@ -23,6 +24,7 @@ function initMap() {
 
   locateButton.addEventListener("click", () => {
     locateButton.disabled = true;
+    searchAreaButton.disabled = true;
     locateUserLocation()
       .then((location) => {
         errorElement.hidden = true;
@@ -33,11 +35,32 @@ function initMap() {
         errorElement.hidden = false;
         errorElement.textContent = error.message;
         updateMap(DEFAULT_LOCATION, "Default location");
-        return fetchNearbyBusinesses(DEFAULT_LOCATION);
+        return fetchNearbyBusinesses(DEFAULT_LOCATION, DEFAULT_RADIUS_METERS, false, true);
       })
       .finally(() => {
         locateButton.disabled = false;
+        searchAreaButton.disabled = false;
       });
+  });
+
+  searchAreaButton.addEventListener("click", () => {
+    const center = map.getCenter();
+    if (!center) {
+      return;
+    }
+
+    const location = { lat: center.lat(), lng: center.lng() };
+    const { radius, isAreaTooLarge } = getSearchRadiusFromBounds();
+
+    searchAreaButton.disabled = true;
+    locateButton.disabled = true;
+    errorElement.hidden = true;
+
+    updateMap(location, "Search area");
+    fetchNearbyBusinesses(location, radius, isAreaTooLarge).finally(() => {
+      searchAreaButton.disabled = false;
+      locateButton.disabled = false;
+    });
   });
 
   updateMap(DEFAULT_LOCATION, "Default location");
@@ -86,20 +109,54 @@ function updateMap(location, label) {
   markers.push(marker);
 }
 
-function fetchNearbyBusinesses(location) {
+function fetchNearbyBusinesses(location, radius = DEFAULT_RADIUS_METERS, isAreaTooLarge = false, isGeolocationFallback = false) {
   return new Promise((resolve) => {
+
     const request = {
       location,
-      radius: DEFAULT_RADIUS_METERS,
+      radius,
       type: "store",
       openNow: false,
     };
 
     service.nearbySearch(request, (results, status) => {
       if (status !== google.maps.places.PlacesServiceStatus.OK || !results) {
+        let errorMessage = "No businesses found nearby";
+
+        switch (status) {
+          case google.maps.places.PlacesServiceStatus.INVALID_REQUEST:
+            if (isAreaTooLarge) {
+              errorMessage = "Search area too large. Please zoom in and try again.";
+            } else {
+              errorMessage = "Invalid search request. Please try again.";
+            }
+            break;
+          case google.maps.places.PlacesServiceStatus.OVER_QUERY_LIMIT:
+            errorMessage = "Search quota exceeded. Please try again later.";
+            break;
+          case google.maps.places.PlacesServiceStatus.REQUEST_DENIED:
+            errorMessage = "Search request denied. Please check your API key.";
+            break;
+          case google.maps.places.PlacesServiceStatus.ZERO_RESULTS:
+            errorMessage = "No businesses found in this area.";
+            break;
+        }
+
+        // Show error message in the map error element
+        const errorElement = document.getElementById("map-error");
+        errorElement.textContent = errorMessage;
+        errorElement.hidden = false;
+
         renderResults([]);
         resolve();
         return;
+      }
+
+      // Only hide error message on successful results if this is not a geolocation fallback
+      // This prevents hiding the geolocation error message when fallback search succeeds
+      if (!isGeolocationFallback) {
+        const errorElement = document.getElementById("map-error");
+        errorElement.hidden = true;
       }
 
       const sortedResults = results
@@ -217,6 +274,27 @@ function renderMarkers(results) {
 function clearMarkers() {
   markers.forEach((marker) => marker.setMap(null));
   markers = [];
+}
+
+function getSearchRadiusFromBounds() {
+  const bounds = map.getBounds();
+  if (!bounds || !google.maps.geometry?.spherical) {
+    return { radius: DEFAULT_RADIUS_METERS, isAreaTooLarge: false };
+  }
+
+  const center = bounds.getCenter();
+  const northEast = bounds.getNorthEast();
+  const calculatedRadius = google.maps.geometry.spherical.computeDistanceBetween(
+    center,
+    northEast
+  );
+
+  // Cap at Google Places API maximum radius of 50,000 meters
+  // Use 49999 to be safe, as the API might be strict about the limit
+  const isAreaTooLarge = calculatedRadius > 49999;
+  const radius = Math.min(calculatedRadius, 49999);
+
+  return { radius, isAreaTooLarge };
 }
 
 window.initMap = initMap;
