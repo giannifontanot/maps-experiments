@@ -35,7 +35,7 @@ function initMap() {
         errorElement.hidden = false;
         errorElement.textContent = error.message;
         updateMap(DEFAULT_LOCATION, "Default location");
-        return fetchNearbyBusinesses(DEFAULT_LOCATION);
+        return fetchNearbyBusinesses(DEFAULT_LOCATION, DEFAULT_RADIUS_METERS, false, true);
       })
       .finally(() => {
         locateButton.disabled = false;
@@ -109,8 +109,9 @@ function updateMap(location, label) {
   markers.push(marker);
 }
 
-function fetchNearbyBusinesses(location, radius = DEFAULT_RADIUS_METERS, isAreaTooLarge = false) {
+function fetchNearbyBusinesses(location, radius = DEFAULT_RADIUS_METERS, isAreaTooLarge = false, isGeolocationFallback = false) {
   return new Promise((resolve) => {
+
     const request = {
       location,
       radius,
@@ -151,9 +152,12 @@ function fetchNearbyBusinesses(location, radius = DEFAULT_RADIUS_METERS, isAreaT
         return;
       }
 
-      // Hide error message on successful results
-      const errorElement = document.getElementById("map-error");
-      errorElement.hidden = true;
+      // Only hide error message on successful results if this is not a geolocation fallback
+      // This prevents hiding the geolocation error message when fallback search succeeds
+      if (!isGeolocationFallback) {
+        const errorElement = document.getElementById("map-error");
+        errorElement.hidden = true;
+      }
 
       const sortedResults = results
         .slice(0, 10)
