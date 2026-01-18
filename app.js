@@ -50,14 +50,14 @@ function initMap() {
     }
 
     const location = { lat: center.lat(), lng: center.lng() };
-    const radius = getSearchRadiusFromBounds();
+    const { radius, isAreaTooLarge } = getSearchRadiusFromBounds();
 
     searchAreaButton.disabled = true;
     locateButton.disabled = true;
     errorElement.hidden = true;
 
     updateMap(location, "Search area");
-    fetchNearbyBusinesses(location, radius).finally(() => {
+    fetchNearbyBusinesses(location, radius, isAreaTooLarge).finally(() => {
       searchAreaButton.disabled = false;
       locateButton.disabled = false;
     });
@@ -109,7 +109,7 @@ function updateMap(location, label) {
   markers.push(marker);
 }
 
-function fetchNearbyBusinesses(location, radius = DEFAULT_RADIUS_METERS) {
+function fetchNearbyBusinesses(location, radius = DEFAULT_RADIUS_METERS, isAreaTooLarge = false) {
   return new Promise((resolve) => {
     const request = {
       location,
@@ -124,7 +124,7 @@ function fetchNearbyBusinesses(location, radius = DEFAULT_RADIUS_METERS) {
 
         switch (status) {
           case google.maps.places.PlacesServiceStatus.INVALID_REQUEST:
-            if (radius >= 50000) {
+            if (isAreaTooLarge) {
               errorMessage = "Search area too large. Please zoom in and try again.";
             } else {
               errorMessage = "Invalid search request. Please try again.";
@@ -275,7 +275,7 @@ function clearMarkers() {
 function getSearchRadiusFromBounds() {
   const bounds = map.getBounds();
   if (!bounds || !google.maps.geometry?.spherical) {
-    return DEFAULT_RADIUS_METERS;
+    return { radius: DEFAULT_RADIUS_METERS, isAreaTooLarge: false };
   }
 
   const center = bounds.getCenter();
@@ -286,7 +286,11 @@ function getSearchRadiusFromBounds() {
   );
 
   // Cap at Google Places API maximum radius of 50,000 meters
-  return Math.min(calculatedRadius, 50000);
+  // Use 49999 to be safe, as the API might be strict about the limit
+  const isAreaTooLarge = calculatedRadius > 49999;
+  const radius = Math.min(calculatedRadius, 49999);
+
+  return { radius, isAreaTooLarge };
 }
 
 window.initMap = initMap;
