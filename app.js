@@ -11,6 +11,7 @@ function initMap() {
   const mapElement = document.getElementById("map");
   const errorElement = document.getElementById("map-error");
   const locateButton = document.getElementById("locate");
+  const searchAreaButton = document.getElementById("search-area");
 
   map = new google.maps.Map(mapElement, {
     center: DEFAULT_LOCATION,
@@ -23,6 +24,7 @@ function initMap() {
 
   locateButton.addEventListener("click", () => {
     locateButton.disabled = true;
+    searchAreaButton.disabled = true;
     locateUserLocation()
       .then((location) => {
         errorElement.hidden = true;
@@ -37,7 +39,28 @@ function initMap() {
       })
       .finally(() => {
         locateButton.disabled = false;
+        searchAreaButton.disabled = false;
       });
+  });
+
+  searchAreaButton.addEventListener("click", () => {
+    const center = map.getCenter();
+    if (!center) {
+      return;
+    }
+
+    const location = { lat: center.lat(), lng: center.lng() };
+    const radius = getSearchRadiusFromBounds();
+
+    searchAreaButton.disabled = true;
+    locateButton.disabled = true;
+    errorElement.hidden = true;
+
+    updateMap(location, "Search area");
+    fetchNearbyBusinesses(location, radius).finally(() => {
+      searchAreaButton.disabled = false;
+      locateButton.disabled = false;
+    });
   });
 
   updateMap(DEFAULT_LOCATION, "Default location");
@@ -86,11 +109,11 @@ function updateMap(location, label) {
   markers.push(marker);
 }
 
-function fetchNearbyBusinesses(location) {
+function fetchNearbyBusinesses(location, radius = DEFAULT_RADIUS_METERS) {
   return new Promise((resolve) => {
     const request = {
       location,
-      radius: DEFAULT_RADIUS_METERS,
+      radius,
       type: "store",
       openNow: false,
     };
@@ -217,6 +240,20 @@ function renderMarkers(results) {
 function clearMarkers() {
   markers.forEach((marker) => marker.setMap(null));
   markers = [];
+}
+
+function getSearchRadiusFromBounds() {
+  const bounds = map.getBounds();
+  if (!bounds || !google.maps.geometry?.spherical) {
+    return DEFAULT_RADIUS_METERS;
+  }
+
+  const center = bounds.getCenter();
+  const northEast = bounds.getNorthEast();
+  return google.maps.geometry.spherical.computeDistanceBetween(
+    center,
+    northEast
+  );
 }
 
 window.initMap = initMap;

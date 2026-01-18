@@ -91,6 +91,37 @@ body {
   font-size: 14px;
 }
 
+.map-actions {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.map-actions button {
+  border: none;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: #111827;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 12px 20px rgba(15, 23, 42, 0.2);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.map-actions button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+  box-shadow: none;
+}
+
+.map-actions button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 24px rgba(15, 23, 42, 0.24);
+}
+
 .list-panel {
   background: #ffffff;
   border-radius: 20px;
