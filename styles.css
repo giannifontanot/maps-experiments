@@ -97,6 +97,7 @@ body {
   top: 16px;
   display: flex;
   justify-content: flex-end;
+  z-index: 1;
 }
 
 .map-actions button {
